@@ -1,1 +1,3 @@
--nothing
+-constexpr
+-exceptions
+-friend template
