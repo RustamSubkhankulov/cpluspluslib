@@ -23,10 +23,10 @@ USE_DEBUG_FLAGS = 0
 #==========================================================
 
 # flags for c++ 
-CXXFLAGS = -O3 -std=c++20
+CXXFLAGS = --std=c++20
 
 # flags for c
-CFLAGS   = -O3
+CFLAGS   = 
 
 #----------------------------------------------------------
 
@@ -80,8 +80,8 @@ endif
 # OBJECT FILES LIST
 #==========================================================
 
-OBJ = $(OBJ_DIR)/main.o          		\
-	  $(OBJ_DIR)/vector.o        		\
+OBJ = $(OBJ_DIR)/main.o   #\
+	  $(OBJ_DIR)/vector.o \
 	  $(OBJ_DIR)/array.o          		
 
 #==========================================================
@@ -111,13 +111,13 @@ $(OBJ_DIR)/main.o:    				$(SRC_DIR)/main/main.cpp 								\
 
 #----------------------------------------------------------
 
-$(OBJ_DIR)/vector.o:				$(call MINIMAL_DEP,vector)
-	$(CXX) 							$(<) -c -o $(@) $(DEBUG_FLAGS) $(CXXFLAGS)
+# $(OBJ_DIR)/vector.o:				$(call MINIMAL_DEP,vector)
+# 	$(CXX) 							$(<) -c -o $(@) $(DEBUG_FLAGS) $(CXXFLAGS)
 
-#----------------------------------------------------------
+# #----------------------------------------------------------
 
-$(OBJ_DIR)/array.o:					$(call MINIMAL_DEP,array)
-	$(CXX) 							$(<) -c -o $(@) $(DEBUG_FLAGS) $(CXXFLAGS)
+# $(OBJ_DIR)/array.o:					$(call MINIMAL_DEP,array)
+# 	$(CXX) 							$(<) -c -o $(@) $(DEBUG_FLAGS) $(CXXFLAGS)
 
 #==========================================================
 # .PHONY TARGETS
