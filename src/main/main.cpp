@@ -15,9 +15,9 @@ int main()
         open_log_file(Logfile_name);
     #endif 
 
-    Array<int, 4> a = {1, 2, 3, 4};
-    Array<int, 4> b = {3, 4, 5, 6};
-    Array<int, 4> c = {9, 9, 9, 9};
+    MyStd::Array<int, 4> a = {1, 2, 3, 4};
+    MyStd::Array<int, 4> b = {3, 4, 5, 6};
+    MyStd::Array<int, 4> c = {9, 9, 9, 9};
     a.swap(c);
 
     for (unsigned iter = 0; iter < a.size(); iter++)

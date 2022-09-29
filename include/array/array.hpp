@@ -12,6 +12,9 @@
 
 //=========================================================
 
+namespace MyStd
+{
+
 template<class T,  size_t N>
 class Array
 {
@@ -161,4 +164,4 @@ bool operator!= (const Array<T, N>& a, const Array<T, N>& b)
     return !(a == b);
 }
 
-//---------------------------------------------------------
+}; // namespace MyStd
