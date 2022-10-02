@@ -1,3 +1,6 @@
 test_exec
 obj/
 todo.txt
+Makefile
+conf/
+src/
