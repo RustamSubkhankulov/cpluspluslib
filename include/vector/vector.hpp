@@ -19,10 +19,10 @@ static const size_t Vector_start_size = 1;
 template <class Type>
 class Vector
 {
-    Type*  data_     = nullptr;
     size_t size_     = 0;
     size_t capacity_ = 0; 
-
+    Type*  data_     = nullptr;
+    
     public:
 
         /////////// type members ///////////
@@ -47,6 +47,7 @@ class Vector
             }
 
         explicit Vector(size_type size):
+            size_    (0),
             capacity_(size),
             data_    (new Type[capacity_])
             {}
@@ -70,46 +71,82 @@ class Vector
                 that.data_     = nullptr;
             }
 
+        Vector(std::initializer_list<Type> list):
+            size_    (list.size()),
+            capacity_(size_),
+            data_    (new Type[capacity_])
+            {
+                for (unsigned iter = 0; iter < size_; iter++)
+                    data_[iter] = *(list.begin() + iter);
+            }
+
         //////////// assignment ////////////
 
         Vector& operator= (const Vector& that)
             {
-                if (this != &that)
+                if (this == &that)
                     return *this;
 
-                delete[] data_; //TODO: do not delete, reuse memory
+                if (capacity_ >= that.size_) // QSTN: должен ли вызываться декстр
+                {
+                    this->resize(that.size_);
+                    size_      = that.size_;
+                }
+                else 
+                {
+                    delete[] data_; 
 
-                size_     = that.size_;
-                capacity_ = that.size_;
-                data_     = new Type[capacity_];
+                    size_     = that.size_;
+                    capacity_ = that.size_;
+                    data_     = new Type[capacity_];
+                }
 
                 for (unsigned iter = 0; iter < size_; iter++)
-                    data_[iter] = that.data_[iter];
+                        data_[iter] = that.data_[iter];
+
+                return *this;
             }
 
         Vector& operator= (Vector&& that)
             {
+                if (this == &that)
+                    return *this;
+
                 delete[] data_;
 
                 size_     = that.size_;
-                capacity_ = that.capacity;
+                capacity_ = that.capacity_;
                 data_     = that.data_;
 
                 that.size_     = 0;
                 that.capacity_ = 0;
                 that.data_     = nullptr;
+
+                return *this;
             }
 
         Vector& operator= (std::initializer_list<Type> list)
             {
-                delete[] data_; //TODO: do not delete, reuse memory
+                size_type list_size = list.size();
 
-                size_     = list.size();
-                capacity_ = size_;
-                data_     = new Type[capacity_];
+                if (capacity_ >= list_size)
+                {
+                    this->resize(list_size); //QSTN
+                    size_      = list_size;
+                }
+                else
+                {
+                    delete[] data_;
+
+                    size_     = list_size;
+                    capacity_ = size_;
+                    data_     = new Type[capacity_];
+                }
 
                 for (unsigned iter = 0; iter < size_; iter++)
-                    data_[iter] = list[iter];
+                        data_[iter] = *(list.begin() + iter);
+
+                return *this;
             }
 
         void assign(std::initializer_list<Type> list)
@@ -127,13 +164,13 @@ class Vector
         
         reference at(size_type pos)
             {
-                assert(pos > size_ && "vector: out of bounds");
+                assert(pos < size_ && "vector: out of bounds");
                 return data_[pos];
             }
 
         const_reference at(size_type pos) const
             {
-                assert(pos > size_ && "vector: out of bounds");
+                assert(pos < size_ && "vector: out of bounds");
                 return data_[pos];
             }
 
@@ -228,22 +265,18 @@ class Vector
         void resize(size_type count, Type value = Type())
             {
                 if (size_ == count)
+                {
                     return;
+                }
                 else if (size_ > count)
                 {
                     while(size_ > count)
-                    {
                         this->pop_back();
-                        size_ -= 1;
-                    }
                 }
                 else
                 {
                     while(size_ < count)
-                    {
                         this->push_back(value);
-                        size_ += 1;
-                    }
                 }
             }
 
@@ -251,7 +284,7 @@ class Vector
             {
                 size_type temp = size_;
                 size_          = that.size_;
-                that.size      = temp;
+                that.size_     = temp;
 
                 temp           = capacity_;
                 capacity_      = that.capacity_;

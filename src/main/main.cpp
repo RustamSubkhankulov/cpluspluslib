@@ -6,20 +6,10 @@
 #include "../../include/array/array.hpp"
 #include "../../include/vector/vector.hpp"
 
-class Loud_int
-{
-    int val_;
+//---------------------------------------------------------
 
-    public:
-        Loud_int(int val):
-        val_(val)
-        {}
-
-        ~Loud_int()
-        {
-            printf("D %d\n", val_);
-        }
-};
+using MyStd::Vector;
+using MyStd::Array;
 
 //=========================================================
 
@@ -30,6 +20,8 @@ int main()
     #ifdef LOGS
         open_log_file(Logfile_name);
     #endif 
+
+    //---------------------------------------------------------
 
     // std::vector<int> v{};
 
@@ -49,27 +41,42 @@ int main()
     //     std::cout << "size " << v.size() << " cap " << v.capacity() << '\n';
     // }
 
-    std::vector<Loud_int> v{};
+    //---------------------------------------------------------
 
-    for (unsigned iter = 0; iter < 1; iter++)
-    {
-        v.push_back(Loud_int(12));
-    }
+    // using std::cout;
 
-    fprintf(stderr, "AAA\n");
+    // Vector<int> v1;
+    // cout << "size " << v1.size() << " cap " << v1.capacity() << '\n';
 
-    for (unsigned iter = 0; iter < 1; iter++)
-    {
-        v.pop_back();
-    }
+    // Vector<int> v2;
+    // v2  = {1, 2, 3, 4};
+    // cout << "size " << v2.size() << " cap " << v2.capacity() << '\n';
 
-    fprintf(stderr, "AAA\n");
+    // v1 = std::move(v2);
+    // cout << "size " << v1.size() << " cap " << v1.capacity() << '\n';
 
-    std::vector<int> v1 {1, 5, 3};
-    std::vector<int> v2 {1, 2, 3, 4};
+    // v1.resize(6, 2);
+    // cout << "size " << v1.size() << " cap " << v1.capacity() << '\n';
 
-    fprintf(stderr, "\n %d \n", (v2 > v1));
+    // for (unsigned iter = 0; iter < v1.size(); iter++)
+    // {
+    //     cout << v1[iter] << '\n';
+    // }
 
+    // Vector<int> v3;
+    // v3 = {1};
+
+    // v1.swap(v3);
+    // for (unsigned iter = 0; iter < v3.size(); iter++)
+    // {
+    //     cout << v3[iter] << '\n';
+    // }
+
+    //---------------------------------------------------------
+
+    Vector<int> v1 = {1, 2, 3, 4};
+
+    //---------------------------------------------------------
 
     #ifdef LOGS
         close_log_file();

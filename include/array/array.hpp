@@ -56,13 +56,13 @@ class Array
 
         reference at(size_type pos)
             {
-                assert(pos > Num && "array: out of bounds");
+                assert(pos < Num && "array: out of bounds");
                 return data_[pos];
             }
 
         const_reference at(size_type pos) const
             {
-                assert(pos > Num && "array: out of bounds");
+                assert(pos < Num && "array: out of bounds");
                 return data_[pos];
             }
 
