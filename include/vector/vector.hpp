@@ -14,7 +14,8 @@
 namespace MyStd
 {
 
-static const size_t Vector_start_size = 1;
+static const size_t Vector_start_size    = 1;
+static const size_t Vector_cap_incr_step = 2;
 
 template <class Type>
 class Vector
@@ -22,7 +23,7 @@ class Vector
     size_t size_     = 0;
     size_t capacity_ = 0; 
     Type*  data_     = nullptr;
-    
+
     public:
 
         /////////// type members ///////////
@@ -57,7 +58,7 @@ class Vector
             capacity_(that.size_), 
             data_    (new Type[size_])
             {
-                for (unsigned iter = 0; iter < size_; iter++)
+                for (size_type iter = 0; iter < size_; iter++)
                     data_[iter] = that.data_[iter];
             }
 
@@ -76,7 +77,7 @@ class Vector
             capacity_(size_),
             data_    (new Type[capacity_])
             {
-                for (unsigned iter = 0; iter < size_; iter++)
+                for (size_type iter = 0; iter < size_; iter++)
                     data_[iter] = *(list.begin() + iter);
             }
 
@@ -101,7 +102,7 @@ class Vector
                     data_     = new Type[capacity_];
                 }
 
-                for (unsigned iter = 0; iter < size_; iter++)
+                for (size_type iter = 0; iter < size_; iter++)
                         data_[iter] = that.data_[iter];
 
                 return *this;
@@ -143,7 +144,7 @@ class Vector
                     data_     = new Type[capacity_];
                 }
 
-                for (unsigned iter = 0; iter < size_; iter++)
+                for (size_type iter = 0; iter < size_; iter++)
                         data_[iter] = *(list.begin() + iter);
 
                 return *this;
@@ -156,7 +157,7 @@ class Vector
 
         void assign(size_type count, const Type& value)
             {
-                for (unsigned iter = 0; iter < size_; iter++)
+                for (size_type iter = 0; iter < size_; iter++)
                     data_[iter] = value;
             }
 
@@ -164,13 +165,19 @@ class Vector
         
         reference at(size_type pos)
             {
-                assert(pos < size_ && "vector: out of bounds");
+                assert(pos < size_);
+                if (pos >= size_)
+                    throw std::out_of_range("vector: out of bounds in at()");
+
                 return data_[pos];
             }
 
         const_reference at(size_type pos) const
             {
-                assert(pos < size_ && "vector: out of bounds");
+                assert(pos < size_);
+                if (pos >= size_)
+                    throw std::out_of_range("vector: out of bounds in at()");
+                
                 return data_[pos];
             }
 
@@ -223,33 +230,48 @@ class Vector
 
         void clear()
             {
-                for (unsigned iter = 0; iter < size_; iter++)
-                    data_[iter].~Type();
+                // for (size_type iter = 0; iter < size_; iter++)
+                //     data_[iter].~Type();
                 size_ = 0;
             }
 
-        // iterator insert(const_iterator pos, const Type& value )
-        //     {
-        //         move_data_by_one(pos);
-        //         *(pos - 1) = value;
-        //     }
+        iterator insert(const_iterator pos, const Type& value )
+            {
+                return this->insert(pos, 1, value);
+            }
 
-        // iterator insert( const_iterator pos, size_type count, const T& value )
-        //     {
-        //         move_data(pos, count)
-        //         *(pos - 1) = value;
-        //     }
+        iterator insert(const_iterator pos, size_type count, const Type& value )
+            {
+                if (count == 0)
+                    return (iterator)pos;
 
-        // TODO: erase
+                size_type base = pos - this->begin();
+                move_data_right(base, count);
+
+                for (size_type iter = 0; iter < count; iter++)
+                    data_[base + iter] = value;
+
+                size_ += count;
+                return &(data_[base]);
+            }
+
+        iterator erase(iterator pos)
+            {
+                size_type base = pos - this->begin();
+                move_data_left(base, 1); //QSTN: надо ли вызывать дестр
+
+                this->pop_back();
+                
+                if (size_)
+                    return &(data_[base]);
+                else 
+                    return this->end();
+            }
 
         void push_back(const Type& value)
             {
                 if (size_ >= capacity_)
-                {
-                    realloc_vector((capacity_ == 0)  ? 
-                                    Vector_start_size:
-                                    capacity_ * 2);
-                }
+                    increase_vector_capacity();
 
                 data_[size_++] = value;
             }
@@ -259,7 +281,10 @@ class Vector
         void pop_back()
             {
                 assert(size_);
-                data_[(size_ = size_ - 1)].~Type();
+                if (size_ == 0)
+                    throw std::underflow_error("vector: pop_back() on empty vector");
+
+                // data_[(size_ = size_ - 1)].~Type();
             }
 
         void resize(size_type count, Type value = Type())
@@ -297,13 +322,20 @@ class Vector
 
         private:
 
+            void increase_vector_capacity()
+                {
+                    realloc_vector((capacity_ == 0)  ? 
+                                    Vector_start_size:
+                                    capacity_ * Vector_cap_incr_step);
+                }
+
             void realloc_vector(size_type new_cap)
                 {
                     assert(new_cap >= size_);
 
                     pointer new_data = new Type[new_cap];
 
-                    for (unsigned iter = 0; iter < size_; iter++)
+                    for (size_type iter = 0; iter < size_; iter++)
                         new_data[iter] = data_[iter];
 
                     delete[] data_;
@@ -312,19 +344,30 @@ class Vector
                     capacity_ = new_cap;
                 }
 
-            // void move_data(const_iterator pos, size_type offset)
-            //     {
-            //         while(offset)
-            //         {
-            //             move_data_by_one(pos);
-            //             offset--;
-            //         }
-            //     }
+            void move_data_right(size_type base, size_type offset)
+                {
+                    while (capacity_ - size_ < offset)
+                        increase_vector_capacity();
 
-            // void move_data_by_one(const_iterator pos)
-            //     {
-                    
-            //     }
+                    if (size_ == 0) return;
+
+                    for (int iter = size_ - 1; (iter >= 0) && (iter >= base); iter--)
+                    {
+                        data_[iter + offset] = std::move(data_[iter]);
+                    }
+                }
+
+            void move_data_left(size_type base, size_type offset)
+                {
+                    assert(offset <= base);
+
+                    if (size_ == 0) return;
+
+                    for (int iter = base; iter < size_ - offset; iter++)
+                    {
+                        data_[iter] = std::move(data_[iter + offset]);
+                    }
+                }
 };
 
 //---------------------------------------------------------
@@ -335,7 +378,7 @@ bool operator== (const Vector<Type>& a, const Vector<Type>& b)
     size_t a_num = a.size() - 1;
     size_t b_num = b.size() - 1;
 
-    unsigned iter = 0;
+    typename Vector<Type>::size_type iter = 0;
 
     for (iter = 0; (iter < a_num) && (iter < b_num); iter++)
     {
@@ -362,7 +405,7 @@ bool operator> (const Vector<Type>& a, const Vector<Type>& b)
     size_t a_num = a.size() - 1;
     size_t b_num = b.size() - 1;
 
-    unsigned iter = 0;
+    typename Vector<Type>::size_type iter = 0;
 
     for (iter = 0; (iter < a_num) && (iter < b_num); iter++)
     {

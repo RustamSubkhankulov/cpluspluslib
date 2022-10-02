@@ -38,7 +38,7 @@ class Array
                 size_type l_size = l.size();
                 assert(l_size <= Num);
 
-                for (unsigned iter = 0; iter < l_size; iter++)
+                for (size_type iter = 0; iter < l_size; iter++)
                 {
                     data_[iter] = *(l.begin() + iter);
                 }
@@ -82,13 +82,13 @@ class Array
 
         void fill(const Type& value)
             { 
-                for (unsigned iter = 0; iter < Num; iter++)
+                for (size_type iter = 0; iter < Num; iter++)
                     data_[iter] = value;
             }
 
         void swap(Array& that)
             {
-                for (unsigned iter = 0; iter < Num; iter++)
+                for (size_type iter = 0; iter < Num; iter++)
                 {
                     Type temp     = std::move(  that [iter]);
                       that [iter] = std::move((*this)[iter]);
@@ -121,7 +121,7 @@ class Array
 template <class Type, size_t Num>
 bool operator> (const Array<Type, Num>& a, const Array<Type, Num>& b)
 {
-    for (unsigned iter = 0; iter < Num; iter++)
+    for (typename Array<Type, Num>::size_type iter = 0; iter < Num; iter++)
         if (a[iter] < b[iter])
             return 0;
 
@@ -157,7 +157,7 @@ bool operator< (const Array<Type, Num>& a, const Array<Type, Num>& b)
 template <class Type, size_t Num>
 bool operator== (const Array<Type, Num>& a, const Array<Type, Num>& b)
 {
-    for (unsigned iter = 0; iter < Num; iter++)
+    for (typename Array<Type, Num>::size_type iter = 0; iter < Num; iter++)
         if (a[iter] != b[iter])
             return false;
 
