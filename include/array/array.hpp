@@ -2,27 +2,27 @@
 
 //---------------------------------------------------------
 
-#include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
 
 #include <initializer_list>
 #include <utility>
-#include <concepts>
 
 //=========================================================
 
 namespace MyStd
 {
 
-template<class T,  size_t N>
+template <class Type,  size_t Num>
 class Array
 {
-    T data_[N];
+    Type data_[Num];
 
     public:
 
-        typedef       T           value_type;
+        /////////// type members ///////////
+
+        typedef       Type        value_type;
         typedef       value_type* pointer;
         typedef const value_type* const_pointer;
         typedef       value_type& reference;
@@ -30,13 +30,13 @@ class Array
         typedef       value_type* iterator;
         typedef const value_type* const_iterator;
         typedef       size_t      size_type;
-        typedef const value_type* const_type_ptr;
-        typedef       value_type* type_ptr;
 
-        Array(std::initializer_list<T> l)
+        /////////// ctors & dtor ///////////
+
+        Array(std::initializer_list<Type> l)
             {
                 size_type l_size = l.size();
-                assert(l_size <= N);
+                assert(l_size <= Num);
 
                 for (unsigned iter = 0; iter < l_size; iter++)
                 {
@@ -52,15 +52,17 @@ class Array
         Array& operator= (const Array&)  = default;
         Array& operator= (Array&&)       = default;
 
+        ////////// element access //////////
+
         reference at(size_type pos)
             {
-                assert(pos < N && "array: out of bounds");
+                assert(pos > Num && "array: out of bounds");
                 return data_[pos];
             }
 
         const_reference at(size_type pos) const
             {
-                assert(pos < N && "array: out of bounds");
+                assert(pos > Num && "array: out of bounds");
                 return data_[pos];
             }
 
@@ -70,47 +72,53 @@ class Array
         reference       front()       { return data_[0]; }
         const_reference front() const { return data_[0]; }
 
-        reference       back()        { return data_[N - 1]; }
-        const_reference back()  const { return data_[N - 1]; }
+        reference       back()        { return data_[Num - 1]; }
+        const_reference back()  const { return data_[Num - 1]; }
 
-        type_ptr        data()        { return data_; }
-        const_type_ptr  data()  const { return data_; }
+        pointer         data()        { return data_; }
+        const_pointer   data()  const { return data_; }
 
-        void fill(const T& value)
+        //////////// operations ////////////
+
+        void fill(const Type& value)
             { 
-                for (unsigned iter = 0; iter < N; iter++)
+                for (unsigned iter = 0; iter < Num; iter++)
                     data_[iter] = value;
             }
 
-        void swap(Array<T, N>& that)
+        void swap(Array& that)
             {
-                for (unsigned iter = 0; iter < N; iter++)
+                for (unsigned iter = 0; iter < Num; iter++)
                 {
-                    T temp        = std::move(  that [iter]);
+                    Type temp     = std::move(  that [iter]);
                       that [iter] = std::move((*this)[iter]);
                     (*this)[iter] = std::move(  temp       );
                 }
             }
 
-        constexpr size_type size() const { return N; }
+        ///////////// capacity /////////////
+
+        constexpr size_type size() const { return Num; }
 
         // since we don't have default constuctor, array can not empty
         constexpr bool empty() const noexcept { return false; }
 
-        constexpr size_type max_size() const { return N; } 
+        constexpr size_type max_size() const { return Num; } 
+
+        ///////////// iterators ////////////
 
         iterator       begin()        { return data_; }
         const_iterator begin()  const { return data_; }
         const_iterator cbegin() const { return data_; }
         
-        iterator       end()          { return data_ + N; }
-        const_iterator end()    const { return data_ + N; }
-        const_iterator cend()   const { return data_ + N; }       
+        iterator       end()          { return data_ + Num; }
+        const_iterator end()    const { return data_ + Num; }
+        const_iterator cend()   const { return data_ + Num; }       
 };
 
 //---------------------------------------------------------
 
-template<class Type, size_t Num>
+template <class Type, size_t Num>
 bool operator> (const Array<Type, Num>& a, const Array<Type, Num>& b)
 {
     for (unsigned iter = 0; iter < Num; iter++)
@@ -122,7 +130,7 @@ bool operator> (const Array<Type, Num>& a, const Array<Type, Num>& b)
 
 //---------------------------------------------------------
 
-template<class Type, size_t Num>
+template <class Type, size_t Num>
 bool operator>= (const Array<Type, Num>& a, const Array<Type, Num>& b)
 {
     return ((a > b) || (a == b));
@@ -130,7 +138,7 @@ bool operator>= (const Array<Type, Num>& a, const Array<Type, Num>& b)
 
 //---------------------------------------------------------
 
-template<class Type, size_t Num>
+template <class Type, size_t Num>
 bool operator<= (const Array<Type, Num>& a, const Array<Type, Num>& b)
 {
     return ((a < b) || (a == b));
@@ -138,7 +146,7 @@ bool operator<= (const Array<Type, Num>& a, const Array<Type, Num>& b)
 
 //---------------------------------------------------------
 
-template<class Type, size_t Num>
+template <class Type, size_t Num>
 bool operator< (const Array<Type, Num>& a, const Array<Type, Num>& b)
 {
     return !(a > b);
@@ -146,10 +154,10 @@ bool operator< (const Array<Type, Num>& a, const Array<Type, Num>& b)
 
 //---------------------------------------------------------
 
-template<class T, size_t N>
-bool operator== (const Array<T, N>& a, const Array<T, N>& b)
+template <class Type, size_t Num>
+bool operator== (const Array<Type, Num>& a, const Array<Type, Num>& b)
 {
-    for (unsigned iter = 0; iter < N; iter++)
+    for (unsigned iter = 0; iter < Num; iter++)
         if (a[iter] != b[iter])
             return false;
 
@@ -158,8 +166,8 @@ bool operator== (const Array<T, N>& a, const Array<T, N>& b)
 
 //---------------------------------------------------------
 
-template<class T, size_t N>
-bool operator!= (const Array<T, N>& a, const Array<T, N>& b)
+template <class Type, size_t Num>
+bool operator!= (const Array<Type, Num>& a, const Array<Type, Num>& b)
 {
     return !(a == b);
 }

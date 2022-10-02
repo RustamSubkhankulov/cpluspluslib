@@ -23,7 +23,7 @@ USE_DEBUG_FLAGS = 0
 #==========================================================
 
 # flags for c++ 
-CXXFLAGS = --std=c++20
+CXXFLAGS = 
 
 # flags for c
 CFLAGS   = 

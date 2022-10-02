@@ -1,3 +1,5 @@
--constexpr
--exceptions
--friend template
+- exceptions
+- test it out
+- reuse mem
+- insert
+- erase
