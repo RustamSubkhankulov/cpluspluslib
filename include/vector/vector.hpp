@@ -9,6 +9,8 @@
 #include <initializer_list>
 #include <utility>
 
+#include "../utilities/utilities.hpp"
+
 //=========================================================
 
 namespace MyStd
@@ -44,22 +46,22 @@ class Vector
 
         ~Vector()
             {
-                delete[] data_;
+                delete[] (char*) data_;
             }
 
-        explicit Vector(size_type size):
+        explicit Vector(size_type capacity):
             size_    (0),
-            capacity_(size),
-            data_    (new Type[capacity_])
+            capacity_(capacity),
+            data_    ((Type*)(new char[capacity_ * sizeof(Type)]))
             {}
 
         Vector(const Vector& that):
             size_    (that.size_),
             capacity_(that.size_), 
-            data_    (new Type[size_])
+            data_    ((Type*)(new char[size_ * sizeof(Type)]))
             {
                 for (size_type iter = 0; iter < size_; iter++)
-                    data_[iter] = that.data_[iter];
+                    new (&data_[iter]) Type(that.data_[iter]);
             }
 
         Vector(Vector&& that):
@@ -75,45 +77,44 @@ class Vector
         Vector(std::initializer_list<Type> list):
             size_    (list.size()),
             capacity_(size_),
-            data_    (new Type[capacity_])
+            data_    ((Type*)(new char[capacity_ * sizeof(Type)]))
             {
                 for (size_type iter = 0; iter < size_; iter++)
-                    data_[iter] = *(list.begin() + iter);
+                    new (&data_[iter]) Type(*(list.begin() + iter));
             }
 
         //////////// assignment ////////////
 
-        Vector& operator= (const Vector& that)
-            {
-                if (this == &that)
-                    return *this;
+        // Vector& operator= (const Vector& that) //???
+        //     {
+        //         if (this == &that)
+        //             return *this;
 
-                if (capacity_ >= that.size_) // QSTN: должен ли вызываться декстр
-                {
-                    this->resize(that.size_);
-                    size_      = that.size_;
-                }
-                else 
-                {
-                    delete[] data_; 
+        //         if (capacity_ >= that.size_) // QSTN: должен ли вызываться декстр
+        //         {
+        //             this->resize(that.size_);
+        //         }
+        //         else 
+        //         {
+        //             delete[] data_; 
 
-                    size_     = that.size_;
-                    capacity_ = that.size_;
-                    data_     = new Type[capacity_];
-                }
+        //             size_     = that.size_;
+        //             capacity_ = that.size_;
+        //             data_     = (Type*)(new char[capacity_ * sizeof(Type)]);
+        //         }
 
-                for (size_type iter = 0; iter < size_; iter++)
-                        data_[iter] = that.data_[iter];
+        //         for (size_type iter = 0; iter < size_; iter++)
+        //                 data_[iter] = that.data_[iter];
 
-                return *this;
-            }
+        //         return *this;
+        //     }
 
         Vector& operator= (Vector&& that)
             {
                 if (this == &that)
                     return *this;
 
-                delete[] data_;
+                delete[] (char*)data_;
 
                 size_     = that.size_;
                 capacity_ = that.capacity_;
@@ -126,46 +127,45 @@ class Vector
                 return *this;
             }
 
-        Vector& operator= (std::initializer_list<Type> list)
-            {
-                size_type list_size = list.size();
+        // Vector& operator= (std::initializer_list<Type> list) //???
+        //     {
+        //         size_type list_size = list.size();
 
-                if (capacity_ >= list_size)
-                {
-                    this->resize(list_size); //QSTN
-                    size_      = list_size;
-                }
-                else
-                {
-                    delete[] data_;
+        //         if (capacity_ >= list_size)
+        //         {
+        //             this->resize(list_size); //QSTN
+        //             size_      = list_size;
+        //         }
+        //         else
+        //         {
+        //             delete[] data_;
 
-                    size_     = list_size;
-                    capacity_ = size_;
-                    data_     = new Type[capacity_];
-                }
+        //             size_     = list_size;
+        //             capacity_ = size_;
+        //             data_     = new Type[capacity_];
+        //         }
 
-                for (size_type iter = 0; iter < size_; iter++)
-                        data_[iter] = *(list.begin() + iter);
+        //         for (size_type iter = 0; iter < size_; iter++)
+        //                 data_[iter] = *(list.begin() + iter);
 
-                return *this;
-            }
+        //         return *this;
+        //     }
 
-        void assign(std::initializer_list<Type> list)
-            {
-                *this = list;
-            }
+        // void assign(std::initializer_list<Type> list)
+        //     {
+        //         *this = list;
+        //     }
 
-        void assign(size_type count, const Type& value)
-            {
-                for (size_type iter = 0; iter < size_; iter++)
-                    data_[iter] = value;
-            }
+        // void assign(size_type count, const Type& value)
+        //     {
+        //         for (size_type iter = 0; iter < size_; iter++)
+        //             data_[iter] = value;
+        //     }
 
         ////////// element access //////////
         
         reference at(size_type pos)
             {
-                assert(pos < size_);
                 if (pos >= size_)
                     throw std::out_of_range("vector: out of bounds in at()");
 
@@ -174,7 +174,6 @@ class Vector
 
         const_reference at(size_type pos) const
             {
-                assert(pos < size_);
                 if (pos >= size_)
                     throw std::out_of_range("vector: out of bounds in at()");
                 
@@ -230,61 +229,66 @@ class Vector
 
         void clear()
             {
-                // for (size_type iter = 0; iter < size_; iter++)
-                //     data_[iter].~Type();
+                for (size_type iter = 0; iter < size_; iter++)
+                    data_[iter].~Type();
                 size_ = 0;
             }
 
-        iterator insert(const_iterator pos, const Type& value )
-            {
-                return this->insert(pos, 1, value);
-            }
+        // iterator insert(const_iterator pos, const Type& value )
+        //     {
+        //         return this->insert(pos, 1, value);
+        //     }
 
-        iterator insert(const_iterator pos, size_type count, const Type& value )
-            {
-                if (count == 0)
-                    return (iterator)pos;
+        // iterator insert(const_iterator pos, size_type count, const Type& value )
+        //     {
+        //         if (count == 0)
+        //             return (iterator)pos;
 
-                size_type base = pos - this->begin();
-                move_data_right(base, count);
+        //         size_type base = pos - this->begin();
+        //         move_data_right(base, count);
 
-                for (size_type iter = 0; iter < count; iter++)
-                    data_[base + iter] = value;
+        //         for (size_type iter = 0; iter < count; iter++)
+        //             data_[base + iter] = value;
 
-                size_ += count;
-                return &(data_[base]);
-            }
+        //         size_ += count;
+        //         return &(data_[base]);
+        //     }
 
-        iterator erase(iterator pos)
-            {
-                size_type base = pos - this->begin();
-                move_data_left(base, 1); //QSTN: надо ли вызывать дестр
+        // iterator erase(iterator pos)
+        //     {
+        //         size_type base = pos - this->begin();
+        //         move_data_left(base, 1); //QSTN: надо ли вызывать дестр
 
-                this->pop_back();
+        //         this->pop_back();
                 
-                if (size_)
-                    return &(data_[base]);
-                else 
-                    return this->end();
-            }
+        //         if (size_)
+        //             return &(data_[base]);
+        //         else 
+        //             return this->end();
+        //     }
 
         void push_back(const Type& value)
             {
                 if (size_ >= capacity_)
                     increase_vector_capacity();
 
-                data_[size_++] = value;
+                new (&data_[size_++]) Type(value);
             }
 
-        // void push_back(Type&& value);
+        void push_back(Type&& value)
+            {
+                if (size_ >= capacity_)
+                    increase_vector_capacity();
+
+                new (&data_[size_++]) Type(std::move(value));
+            }
 
         void pop_back()
             {
-                assert(size_);
                 if (size_ == 0)
                     throw std::underflow_error("vector: pop_back() on empty vector");
 
-                // data_[(size_ = size_ - 1)].~Type();
+                data_[--size_].~Type();
             }
 
         void resize(size_type count, Type value = Type())
@@ -333,12 +337,7 @@ class Vector
                 {
                     assert(new_cap >= size_);
 
-                    pointer new_data = new Type[new_cap];
-
-                    for (size_type iter = 0; iter < size_; iter++)
-                        new_data[iter] = data_[iter];
-
-                    delete[] data_;
+                    pointer new_data = MyStd::realloc<Type>(data_, capacity_, new_cap);
 
                     data_     = new_data;
                     capacity_ = new_cap;
