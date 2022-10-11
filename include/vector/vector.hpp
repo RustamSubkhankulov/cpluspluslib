@@ -46,6 +46,11 @@ class Vector
 
         ~Vector()
             {
+                for (size_type iter = 0; iter < size_; iter++)
+                {
+                    data_[iter].~Type();
+                }
+
                 delete[] (char*) data_;
             }
 
@@ -61,7 +66,9 @@ class Vector
             data_    ((Type*)(new char[size_ * sizeof(Type)]))
             {
                 for (size_type iter = 0; iter < size_; iter++)
+                {
                     new (&data_[iter]) Type(that.data_[iter]);
+                }
             }
 
         Vector(Vector&& that):
@@ -80,39 +87,58 @@ class Vector
             data_    ((Type*)(new char[capacity_ * sizeof(Type)]))
             {
                 for (size_type iter = 0; iter < size_; iter++)
+                {
                     new (&data_[iter]) Type(*(list.begin() + iter));
+                }
             }
 
         //////////// assignment ////////////
 
-        // Vector& operator= (const Vector& that) //???
-        //     {
-        //         if (this == &that)
-        //             return *this;
+        Vector& operator= (const Vector& that)
+            {
+                if (this == &that)
+                    return *this;
 
-        //         if (capacity_ >= that.size_) // QSTN: должен ли вызываться декстр
-        //         {
-        //             this->resize(that.size_);
-        //         }
-        //         else 
-        //         {
-        //             delete[] data_; 
+                if (capacity_ >= that.size_)
+                {
+                    this->resize(that.size_);
 
-        //             size_     = that.size_;
-        //             capacity_ = that.size_;
-        //             data_     = (Type*)(new char[capacity_ * sizeof(Type)]);
-        //         }
+                    for (size_type iter = 0; iter < size_; iter++)
+                    {
+                        data_[iter] = that.data_[iter];
+                    }
+                }
+                else
+                {
+                    for (size_type iter = 0; iter < size_; iter++)
+                    {
+                        data_[iter].~Type();
+                    }
 
-        //         for (size_type iter = 0; iter < size_; iter++)
-        //                 data_[iter] = that.data_[iter];
+                    delete[] (char*)data_; 
 
-        //         return *this;
-        //     }
+                    size_     = that.size_;
+                    capacity_ = that.size_;
+                    data_     = (Type*)(new char[capacity_ * sizeof(Type)]);
+                
+                    for (size_type iter = 0; iter < size_; iter++)
+                    {
+                        new (&data_[iter]) Type(that.data_[iter]);
+                    }
+                }
+
+                return *this;
+            }
 
         Vector& operator= (Vector&& that)
             {
                 if (this == &that)
                     return *this;
+
+                for (size_type iter = 0; iter < size_; iter++)
+                {
+                    data_[iter].~Type();
+                }
 
                 delete[] (char*)data_;
 
@@ -127,40 +153,70 @@ class Vector
                 return *this;
             }
 
-        // Vector& operator= (std::initializer_list<Type> list) //???
-        //     {
-        //         size_type list_size = list.size();
+        Vector& operator= (std::initializer_list<Type> list)
+            {
+                size_type list_size = list.size();
 
-        //         if (capacity_ >= list_size)
-        //         {
-        //             this->resize(list_size); //QSTN
-        //             size_      = list_size;
-        //         }
-        //         else
-        //         {
-        //             delete[] data_;
+                if (capacity_ >= list_size)
+                {
+                    this->resize(list_size);
 
-        //             size_     = list_size;
-        //             capacity_ = size_;
-        //             data_     = new Type[capacity_];
-        //         }
+                    for (size_type iter = 0; iter < size_; iter++)
+                        data_[iter] = *(list.begin() + iter);
+                }
+                else
+                {
+                    for (size_type iter = 0; iter < size_; iter++)
+                    {
+                        data_[iter].~Type();
+                    }
 
-        //         for (size_type iter = 0; iter < size_; iter++)
-        //                 data_[iter] = *(list.begin() + iter);
+                    delete[] (char*)data_;
 
-        //         return *this;
-        //     }
+                    size_     = list_size;
+                    capacity_ = size_;
+                    data_     = (Type*)(new char[capacity_ * sizeof(char)]);
 
-        // void assign(std::initializer_list<Type> list)
-        //     {
-        //         *this = list;
-        //     }
+                    for (size_type iter = 0; iter < size_; iter++)
+                        new (&data_[iter]) Type(*(list.begin() + iter));
+                }
 
-        // void assign(size_type count, const Type& value)
-        //     {
-        //         for (size_type iter = 0; iter < size_; iter++)
-        //             data_[iter] = value;
-        //     }
+                return *this;
+            }
+
+        void assign(std::initializer_list<Type> list)
+            {
+                *this = list;
+            }
+
+        void assign(size_type count, const Type& value)
+            {
+                if (capacity_ >= count)
+                {
+                    this->resize(count);
+
+                    for (size_type iter = 0; iter < size_; iter++)
+                    {
+                        data_[iter] = value;
+                    }
+                }
+                else
+                {
+                    for (size_type iter = 0; iter < size_; iter++)
+                    {
+                        data_[iter].~Type();
+                    }
+
+                    delete[] (char*)data_;
+
+                    size_     = count;
+                    capacity_ = size_;
+                    data_     = (Type*)(new char[capacity_ * sizeof(char)]);
+
+                    for (size_type iter = 0; iter < size_; iter++)
+                        new (&data_[iter]) Type(value);
+                }
+            }
 
         ////////// element access //////////
         
@@ -230,42 +286,63 @@ class Vector
         void clear()
             {
                 for (size_type iter = 0; iter < size_; iter++)
+                {
                     data_[iter].~Type();
+                }
+
                 size_ = 0;
             }
 
-        // iterator insert(const_iterator pos, const Type& value )
-        //     {
-        //         return this->insert(pos, 1, value);
-        //     }
+        iterator insert(const_iterator pos, Type&& value )
+            {
+                size_type base = pos - this->begin();
+                move_data_right(base, 1);
 
-        // iterator insert(const_iterator pos, size_type count, const Type& value )
-        //     {
-        //         if (count == 0)
-        //             return (iterator)pos;
+                if (base < size_)
+                    data_[base] = std::move(value);
+                else 
+                    new (&data_[base]) Type(std::move(value));
 
-        //         size_type base = pos - this->begin();
-        //         move_data_right(base, count);
+                size_ ++;
+                return &(data_[base]);
+            }
 
-        //         for (size_type iter = 0; iter < count; iter++)
-        //             data_[base + iter] = value;
+        iterator insert(const_iterator pos, const Type& value )
+            {
+                return this->insert(pos, 1, value);
+            }
 
-        //         size_ += count;
-        //         return &(data_[base]);
-        //     }
+        iterator insert(const_iterator pos, size_type count, const Type& value )
+            {
+                if (count == 0)
+                    return (iterator)pos;
 
-        // iterator erase(iterator pos)
-        //     {
-        //         size_type base = pos - this->begin();
-        //         move_data_left(base, 1); //QSTN: надо ли вызывать дестр
+                size_type base = pos - this->begin();
+                move_data_right(base, count);
 
-        //         this->pop_back();
+                for (size_type iter = base; iter < base + count; iter++)
+                {
+                    if (iter < size_)
+                        data_[iter] = value;
+                    else 
+                        new (&data_[iter]) Type(value);
+                }
+
+                size_ += count;
+                return &(data_[base]);
+            }
+
+        iterator erase(iterator pos)
+            {
+                size_type base = pos - this->begin();
+                move_data_left(base, 1); 
+                size_--;
                 
-        //         if (size_)
-        //             return &(data_[base]);
-        //         else 
-        //             return this->end();
-        //     }
+                if (size_)
+                    return &(data_[base]);
+                else 
+                    return this->end();
+            }
 
         void push_back(const Type& value)
             {
@@ -348,23 +425,38 @@ class Vector
                     while (capacity_ - size_ < offset)
                         increase_vector_capacity();
 
-                    if (size_ == 0) return;
+                    int iter     = (int)size_ - 1;
+                    int offset_i = (int)offset;
+                    int   size_i = (int)size_;  
 
-                    for (int iter = size_ - 1; (iter >= 0) && (iter >= base); iter--)
+                    fprintf(stderr, "base %lu iter %d offset_i %d size_i %d \n", base, iter, offset_i, size_i);
+
+                    for (; (iter >= (int)base) && (iter >= (size_i - offset_i)); iter--)
                     {
-                        data_[iter + offset] = std::move(data_[iter]);
+                        new (&data_[iter + offset_i]) Type(std::move(data_[iter]));
+                    }
+                    
+                    for (; iter >= (int)base; iter--)
+                    {
+                        data_[iter + offset_i] = std::move(data_[iter]);
                     }
                 }
 
             void move_data_left(size_type base, size_type offset)
                 {
-                    assert(offset <= base);
+                    assert(offset - 1 <= base);
 
                     if (size_ == 0) return;
 
                     for (int iter = base; iter < size_ - offset; iter++)
                     {
                         data_[iter] = std::move(data_[iter + offset]);
+                    }
+
+                    int ind = size_ - offset;
+                    for (int iter = 0; iter < offset; iter++)
+                    {
+                        data_[iter + ind].~Type();
                     }
                 }
 };
