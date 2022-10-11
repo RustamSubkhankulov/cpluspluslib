@@ -9,7 +9,9 @@
 #include <initializer_list>
 #include <utility>
 
-#include "../utilities/utilities.hpp"
+#include "../utilities/realloc.hpp"
+#include "../exception/exception.hpp"
+#include "../logs/logs.hpp"
 
 //=========================================================
 
@@ -54,7 +56,7 @@ class Vector
                 delete[] (char*) data_;
             }
 
-        explicit Vector(size_type capacity):
+        explicit Vector(const size_type capacity):
             size_    (0),
             capacity_(capacity),
             data_    ((Type*)(new char[capacity_ * sizeof(Type)]))
@@ -223,21 +225,30 @@ class Vector
         reference at(size_type pos)
             {
                 if (pos >= size_)
-                    throw std::out_of_range("vector: out of bounds in at()");
-
+                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, "out of bounds in at() member function");
                 return data_[pos];
             }
 
         const_reference at(size_type pos) const
             {
                 if (pos >= size_)
-                    throw std::out_of_range("vector: out of bounds in at()");
-                
+                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, "out of bounds in at() member function");
                 return data_[pos];
             }
 
-        reference       operator[] (size_type pos)       { return data_[pos]; }
-        const_reference operator[] (size_type pos) const { return data_[pos]; }
+        reference operator[] (size_type pos)       
+            { 
+                if (pos >= size_)
+                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, "out of bounds in operator[] member function");
+                return data_[pos]; 
+            }
+
+        const_reference operator[] (size_type pos) const 
+            {
+                if (pos >= size_)
+                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, "out of bounds in operator[] member function");
+                return data_[pos]; 
+            }
 
         reference       front()       { return data_[0]; }
         const_reference front() const { return data_[0]; }
@@ -363,7 +374,7 @@ class Vector
         void pop_back()
             {
                 if (size_ == 0)
-                    throw std::underflow_error("vector: pop_back() on empty vector");
+                    throw new EXCP(MYSTD_VECTOR_EMPTY_POP, "pop_back() while size is 0");
 
                 data_[--size_].~Type();
             }
@@ -428,8 +439,6 @@ class Vector
                     int iter     = (int)size_ - 1;
                     int offset_i = (int)offset;
                     int   size_i = (int)size_;  
-
-                    fprintf(stderr, "base %lu iter %d offset_i %d size_i %d \n", base, iter, offset_i, size_i);
 
                     for (; (iter >= (int)base) && (iter >= (size_i - offset_i)); iter--)
                     {
