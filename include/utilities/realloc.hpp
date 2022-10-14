@@ -10,7 +10,7 @@ namespace MyStd
 {
 
 template <class Type> 
-Type* realloc(Type* old_buf, size_t old_size, size_t new_size)
+Type* emplc_synt_realloc(Type* old_buf, size_t old_size, size_t new_size)
 {
     Type* new_buf = (Type*)(new char[new_size * sizeof(Type)]);
 
@@ -22,6 +22,7 @@ Type* realloc(Type* old_buf, size_t old_size, size_t new_size)
         old_buf[iter].~Type();
     }
 
+    delete (char*) old_buf;
     return new_buf;
 }
 

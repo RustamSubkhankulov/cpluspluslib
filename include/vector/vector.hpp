@@ -28,6 +28,8 @@ class Vector
     size_t capacity_ = 0; 
     Type*  data_     = nullptr;
 
+    // error_code err_code = 0;
+
     public:
 
         /////////// type members ///////////
@@ -58,19 +60,33 @@ class Vector
 
         explicit Vector(const size_type capacity):
             size_    (0),
-            capacity_(capacity),
-            data_    ((Type*)(new char[capacity_ * sizeof(Type)]))
-            {}
+            capacity_(0),
+            data_    (nullptr)
+            {
+                if (capacity == 0)
+                    return;
+
+                Type* data = (Type*) new char[capacity * sizeof(Type)];
+
+                capacity_ = capacity;
+                data_     = data;     
+            }
 
         Vector(const Vector& that):
-            size_    (that.size_),
-            capacity_(that.size_), 
-            data_    ((Type*)(new char[size_ * sizeof(Type)]))
+            size_    (0),
+            capacity_(0),
+            data_    (nullptr)
             {
-                for (size_type iter = 0; iter < size_; iter++)
-                {
-                    new (&data_[iter]) Type(that.data_[iter]);
-                }
+                if (that.size_ == 0)
+                    return;
+
+                Type* data = (Type*) new char[capacity * sizeof(Type)];
+
+                try_data_copy_ctor(that.size_, data, that.begin());
+
+                size_     = that.size_;
+                capacity_ = that.size_;
+                data_     = data;
             }
 
         Vector(Vector&& that):
@@ -84,15 +100,27 @@ class Vector
             }
 
         Vector(std::initializer_list<Type> list):
-            size_    (list.size()),
-            capacity_(size_),
-            data_    ((Type*)(new char[capacity_ * sizeof(Type)]))
+            size_    (0),
+            capacity_(0),
+            data_    (nullptr)
             {
-                for (size_type iter = 0; iter < size_; iter++)
-                {
-                    new (&data_[iter]) Type(*(list.begin() + iter));
-                }
+                size_type list_size = list.size();
+                Type* data = (Type*) new char[list_size * sizeof(Type)];
+
+                try_data_copy_ctor(list_size, data, list.begin());
+
+                size_     = list_size;
+                capacity_ = list_size;
+                data_     = data;
             }
+
+        ///////// errors and casts /////////
+
+        // operator      bool() const { return err_code; } 
+
+        // bool        is_err() const { return err_code; }
+
+        // error_code get_err() const { return err_code; }
 
         //////////// assignment ////////////
 
@@ -103,7 +131,7 @@ class Vector
 
                 if (capacity_ >= that.size_)
                 {
-                    this->resize(that.size_);
+                    resize(that.size_);
 
                     for (size_type iter = 0; iter < size_; iter++)
                     {
@@ -125,7 +153,7 @@ class Vector
                 
                     for (size_type iter = 0; iter < size_; iter++)
                     {
-                        new (&data_[iter]) Type(that.data_[iter]);
+                        ::new (&data_[iter]) Type(that.data_[iter]);
                     }
                 }
 
@@ -134,7 +162,8 @@ class Vector
 
         Vector& operator= (Vector&& that)
             {
-                if (this == &that)
+                if (this == &that)size_     = that.size_;
+                capacity_ = that.capacity_;
                     return *this;
 
                 for (size_type iter = 0; iter < size_; iter++)
@@ -161,7 +190,7 @@ class Vector
 
                 if (capacity_ >= list_size)
                 {
-                    this->resize(list_size);
+                    resize(list_size);
 
                     for (size_type iter = 0; iter < size_; iter++)
                         data_[iter] = *(list.begin() + iter);
@@ -180,7 +209,7 @@ class Vector
                     data_     = (Type*)(new char[capacity_ * sizeof(char)]);
 
                     for (size_type iter = 0; iter < size_; iter++)
-                        new (&data_[iter]) Type(*(list.begin() + iter));
+                        ::new (&data_[iter]) Type(*(list.begin() + iter));
                 }
 
                 return *this;
@@ -195,7 +224,7 @@ class Vector
             {
                 if (capacity_ >= count)
                 {
-                    this->resize(count);
+                    resize(count);
 
                     for (size_type iter = 0; iter < size_; iter++)
                     {
@@ -216,7 +245,7 @@ class Vector
                     data_     = (Type*)(new char[capacity_ * sizeof(char)]);
 
                     for (size_type iter = 0; iter < size_; iter++)
-                        new (&data_[iter]) Type(value);
+                        ::new (&data_[iter]) Type(value);
                 }
             }
 
@@ -225,28 +254,32 @@ class Vector
         reference at(size_type pos)
             {
                 if (pos >= size_)
-                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, "out of bounds in at() member function");
+                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, \
+                    "out of bounds in at() member function");
                 return data_[pos];
             }
 
         const_reference at(size_type pos) const
             {
                 if (pos >= size_)
-                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, "out of bounds in at() member function");
+                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, \
+                    "out of bounds in at() member function");
                 return data_[pos];
             }
 
         reference operator[] (size_type pos)       
             { 
                 if (pos >= size_)
-                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, "out of bounds in operator[] member function");
+                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, \
+                    "out of bounds in operator[] member function");
                 return data_[pos]; 
             }
 
         const_reference operator[] (size_type pos) const 
             {
                 if (pos >= size_)
-                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, "out of bounds in operator[] member function");
+                    throw new EXCP(MYSTD_VECTOR_OUT_BOUNDS, \
+                    "out of bounds in operator[] member function");
                 return data_[pos]; 
             }
 
@@ -306,13 +339,13 @@ class Vector
 
         iterator insert(const_iterator pos, Type&& value )
             {
-                size_type base = pos - this->begin();
+                size_type base = pos - begin();
                 move_data_right(base, 1);
 
                 if (base < size_)
                     data_[base] = std::move(value);
                 else 
-                    new (&data_[base]) Type(std::move(value));
+                    ::new (&data_[base]) Type(std::move(value));
 
                 size_ ++;
                 return &(data_[base]);
@@ -320,7 +353,7 @@ class Vector
 
         iterator insert(const_iterator pos, const Type& value )
             {
-                return this->insert(pos, 1, value);
+                return insert(pos, 1, value);
             }
 
         iterator insert(const_iterator pos, size_type count, const Type& value )
@@ -328,7 +361,7 @@ class Vector
                 if (count == 0)
                     return (iterator)pos;
 
-                size_type base = pos - this->begin();
+                size_type base = pos - begin();
                 move_data_right(base, count);
 
                 for (size_type iter = base; iter < base + count; iter++)
@@ -336,7 +369,7 @@ class Vector
                     if (iter < size_)
                         data_[iter] = value;
                     else 
-                        new (&data_[iter]) Type(value);
+                        ::new (&data_[iter]) Type(value);
                 }
 
                 size_ += count;
@@ -345,14 +378,14 @@ class Vector
 
         iterator erase(iterator pos)
             {
-                size_type base = pos - this->begin();
+                size_type base = pos - begin();
                 move_data_left(base, 1); 
                 size_--;
                 
                 if (size_)
                     return &(data_[base]);
                 else 
-                    return this->end();
+                    return end();
             }
 
         void push_back(const Type& value)
@@ -360,7 +393,7 @@ class Vector
                 if (size_ >= capacity_)
                     increase_vector_capacity();
 
-                new (&data_[size_++]) Type(value);
+                ::new (&data_[size_++]) Type(value);
             }
 
         void push_back(Type&& value)
@@ -368,7 +401,7 @@ class Vector
                 if (size_ >= capacity_)
                     increase_vector_capacity();
 
-                new (&data_[size_++]) Type(std::move(value));
+                ::new (&data_[size_++]) Type(std::move(value));
             }
 
         void pop_back()
@@ -376,7 +409,8 @@ class Vector
                 if (size_ == 0)
                     throw new EXCP(MYSTD_VECTOR_EMPTY_POP, "pop_back() while size is 0");
 
-                data_[--size_].~Type();
+                data_[size_ - 1].~Type();
+                size_--;
             }
 
         void resize(size_type count, Type value = Type())
@@ -388,12 +422,12 @@ class Vector
                 else if (size_ > count)
                 {
                     while(size_ > count)
-                        this->pop_back();
+                        pop_back();
                 }
                 else
                 {
                     while(size_ < count)
-                        this->push_back(value);
+                        push_back(value);
                 }
             }
 
@@ -407,7 +441,7 @@ class Vector
                 capacity_      = that.capacity_;
                 that.capacity_ = temp;
 
-                pointer data_temp = data_;
+                Type* data_temp = data_;
                 data_             = that.data_;
                 that.data_        = data_temp;
             }
@@ -425,7 +459,7 @@ class Vector
                 {
                     assert(new_cap >= size_);
 
-                    pointer new_data = MyStd::realloc<Type>(data_, capacity_, new_cap);
+                    Type* new_data = MyStd::emplc_synt_realloc<Type>(data_, capacity_, new_cap);
 
                     data_     = new_data;
                     capacity_ = new_cap;
@@ -442,7 +476,7 @@ class Vector
 
                     for (; (iter >= (int)base) && (iter >= (size_i - offset_i)); iter--)
                     {
-                        new (&data_[iter + offset_i]) Type(std::move(data_[iter]));
+                        ::new (&data_[iter + offset_i]) Type(std::move(data_[iter]));
                     }
                     
                     for (; iter >= (int)base; iter--)
@@ -466,6 +500,31 @@ class Vector
                     for (int iter = 0; iter < offset; iter++)
                     {
                         data_[iter + ind].~Type();
+                    }
+                }
+
+            void try_data_copy_ctor(size_type size, Type* data, Type* src)
+                {
+                    for (size_type iter = 0; iter < size; iter++)
+                    {
+                        try 
+                        {
+                            ::new (&data[iter]) Type(*(src + iter));
+                        }
+                        catch(...)
+                        {
+                            while (true)
+                            {
+                                if (iter == 0)
+                                    break;
+                                
+                                iter--;
+                                data[iter].~Type();
+                            }
+
+                            delete[] (char*) data;
+                            throw;
+                        }
                     }
                 }
 };
