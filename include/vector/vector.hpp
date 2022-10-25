@@ -105,6 +105,10 @@ class Vector
             data_    (nullptr)
             {
                 size_type list_size = list.size();
+
+                if (list_size == 0)
+                    return;
+
                 Type* data = (Type*) new char[list_size * sizeof(Type)];
 
                 try_data_copy_ctor(list_size, data, list.begin());
